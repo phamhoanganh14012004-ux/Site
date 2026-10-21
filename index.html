@@ -1,0 +1,173 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Userscript Studio</title>
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;background:#0b1020;color:#e5e7eb;
+  font-family:Arial,sans-serif
+}
+header{
+  padding:20px;background:#111827;
+  border-bottom:1px solid #293449
+}
+header h2{margin:0;color:#60a5fa}
+header p{color:#9ca3af;margin-bottom:0}
+main{max-width:1100px;margin:auto;padding:20px}
+.toolbar{
+  display:flex;flex-wrap:wrap;gap:10px;margin:14px 0
+}
+button{
+  border:0;border-radius:8px;padding:11px 15px;
+  background:#2563eb;color:white;cursor:pointer;
+  font-weight:bold
+}
+button:hover{filter:brightness(1.15)}
+.secondary{background:#374151}
+.danger{background:#b91c1c}
+input,textarea{
+  width:100%;padding:12px;border-radius:8px;
+  border:1px solid #374151;background:#111827;
+  color:#e5e7eb;font:14px monospace
+}
+label{display:block;margin:16px 0 7px;color:#93c5fd}
+textarea{
+  min-height:400px;resize:vertical;
+  line-height:1.6;tab-size:4
+}
+.status{color:#9ca3af;font-size:13px;margin-top:12px}
+.note{
+  padding:14px;background:#172033;border-radius:8px;
+  line-height:1.6;color:#cbd5e1;margin-top:18px
+}
+</style>
+</head>
+<body>
+<header>
+  <h2>⚡ Userscript Studio</h2>
+  <p>Viết · Chỉnh sửa · Sao chép · Tải Userscript</p>
+</header>
+
+<main>
+  <label for="scriptName">Tên userscript</label>
+  <input id="scriptName" value="My Userscript">
+
+  <label for="scriptCode">Mã JavaScript / Userscript</label>
+  <textarea id="scriptCode" spellcheck="false"
+    placeholder="Dán code userscript của bạn vào đây...">// ==UserScript==
+// @name         My Userscript
+// @namespace    https://example.com/
+// @version      1.0.0
+// @description  Userscript của tôi
+// @match        https://example.com/*
+// @grant        none
+// ==/UserScript==
+
+(function() {
+    'use strict';
+
+    console.log('Userscript đang chạy!');
+})();
+</textarea>
+
+  <div class="toolbar">
+    <button onclick="copyCode()">📋 Sao chép code</button>
+    <button onclick="downloadCode()">⬇ Tải file .user.js</button>
+    <button class="secondary" onclick="document.getElementById('fileInput').click()">📂 Mở file</button>
+    <button class="secondary" onclick="selectAll()">Chọn tất cả</button>
+    <button class="danger" onclick="clearCode()">Xóa code</button>
+  </div>
+
+  <input id="fileInput" type="file" accept=".js,.user.js,.txt"
+    hidden onchange="openFile(event)">
+
+  <div class="status" id="status">Sẵn sàng.</div>
+
+  <div class="note">
+    <strong>Hướng dẫn sử dụng</strong><br>
+    1. Dán code userscript vào khung chỉnh sửa.<br>
+    2. Nhấn “Tải file .user.js”.<br>
+    3. Mở file bằng trình duyệt đã cài Tampermonkey
+    hoặc nhập code vào trình quản lý userscript.<br>
+    4. Kiểm tra các dòng <code>@match</code> để script
+    chỉ chạy trên website bạn mong muốn.<br><br>
+    Lưu ý: Trang này dùng để soạn thảo và tải code,
+    không tự chạy code trên các website khác.
+  </div>
+</main>
+
+<script>
+const editor = document.getElementById('scriptCode');
+const statusBox = document.getElementById('status');
+
+function setStatus(message) {
+  statusBox.textContent = message;
+}
+
+async function copyCode() {
+  try {
+    await navigator.clipboard.writeText(editor.value);
+    setStatus('Đã sao chép code vào clipboard.');
+  } catch (error) {
+    editor.focus();
+    editor.select();
+    setStatus('Hãy nhấn Ctrl+C hoặc chọn Sao chép.');
+  }
+}
+
+function downloadCode() {
+  const name = document.getElementById('scriptName')
+    .value.trim() || 'userscript';
+
+  const blob = new Blob(
+    [editor.value],
+    { type: 'text/javascript;charset=utf-8' }
+  );
+
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = name.replace(/[\\/:*?"<>|]/g, '_')
+    + '.user.js';
+
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+  setStatus('Đã yêu cầu tải file .user.js.');
+}
+
+function openFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    editor.value = String(reader.result);
+    document.getElementById('scriptName').value =
+      file.name.replace(/\.user\.js$|\.js$|\.txt$/i, '');
+    setStatus('Đã mở file: ' + file.name);
+  };
+  reader.onerror = () => setStatus('Không đọc được file.');
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+function selectAll() {
+  editor.focus();
+  editor.select();
+}
+
+function clearCode() {
+  if (confirm('Bạn có chắc muốn xóa toàn bộ code?')) {
+    editor.value = '';
+    setStatus('Đã xóa code.');
+  }
+}
+</script>
+</body>
+</html>
